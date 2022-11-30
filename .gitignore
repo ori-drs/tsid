@@ -5,3 +5,4 @@ Xcode/
 build*/
 _build*/
 .vscode
+.idea/
