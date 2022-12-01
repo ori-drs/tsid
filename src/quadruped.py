@@ -8,12 +8,15 @@ from whole_body_state_msgs.msg import WholeBodyState
 from whole_body_state_conversions import whole_body_controller_publisher
 from whole_body_state_conversions import whole_body_state_publisher
 from robotSimulation import RaiSim
+import os
 
 class Anymal():
     def __init__(self, dt_RaiSim, dt_TSID):
 
         # File paths
-        path = '/home/kian/catkin_ws/src/example-robot-data/robots'
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../example-robot-data/robots")
+        print(path)
+       # path = '/home/kian/catkin_ws/src/example-robot-data/robots'
         urdf = path + '/anymal_c_simple_description/urdf/anymal.urdf'
         srdf = path + '/anymal_raisim/srdf/anymal.srdf'
 
