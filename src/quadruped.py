@@ -82,6 +82,7 @@ class Anymal():
         # p_max = self.model.upperPositionLimit
         # p_min = self.model.lowerPositionLimit
         self.jointBoundsTask = tsid.TaskJointBounds("task-joint-bounds", self.robot, self.dt_TSID)
+        self.jbt = tsid.TaskJointPosVelAccBounds("task-joint-pos-vel-acc-bounds", self.robot, self.dt_TSID)
         # self.jointBoundsTask.setPositionBounds(p_min, p_max)
         self.jointBoundsTask.setVelocityBounds(v_min, v_max)
 
