@@ -11,7 +11,7 @@ from robotSimulation import RaiSim
 import os
 
 class Anymal():
-    def __init__(self, dt_RaiSim, dt_TSID):
+    def __init__(self, dt):
 
         # File paths
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../example-robot-data/robots")
@@ -21,9 +21,7 @@ class Anymal():
         srdf = path + '/anymal_raisim/srdf/anymal.srdf'
 
         # dt for Raisim
-        self.dt = dt_RaiSim
-
-        self.dt_TSID = dt_TSID
+        self.dt = dt
 
         # robot and model for use in TSID
         self.robot = tsid.RobotWrapper(urdf, [path], pin.JointModelFreeFlyer(), False)
@@ -76,20 +74,12 @@ class Anymal():
         p_min = self.model.lowerPositionLimit[7:]
         p_max = self.model.upperPositionLimit[7:]
         v_max = self.model.velocityLimit[6:]
-        v_min = -v_max
         tau_max = self.model.effortLimit[6:]
         tau_min = -tau_max
-        print(v_max)
-        print(tau_max)
-        # p_max = self.model.upperPositionLimit
-        # p_min = self.model.lowerPositionLimit
-        # self.jointBoundsTask = tsid.TaskJointPosVelAccBounds("task-joint-bounds", self.robot, self.dt_TSID)
-        # self.jointBoundsTask.setVelocityBounds(v_min, v_max)
-        # self.jointBoundsTask.setAccelerationBounds(v_min*0.1, v_max*0.1)
-        self.jointBoundsTask = tsid.TaskJointPosVelAccBounds("task-joint-bounds", self.robot, self.dt_TSID)
+
+        self.jointBoundsTask = tsid.TaskJointPosVelAccBounds("task-joint-bounds", self.robot, self.dt)
         self.jointBoundsTask.setPositionBounds(p_min, p_max)
         self.jointBoundsTask.setVelocityBounds(v_max)
-        self.jointBoundsTask.setAccelerationBounds(v_max)
 
         self.actuationBoundsTask = tsid.TaskActuationBounds("task-actuation-bounds", self.robot)
         self.actuationBoundsTask.setBounds(tau_min, tau_max)
@@ -316,12 +306,12 @@ class Anymal():
 
         dv = self.invdyn.getAccelerations(sol)
 
-        v_mean = self.v + 0.5 * self.dt_TSID * dv
-        self.v_command += self.dt_TSID* dv
-        self.q_command = pin.integrate(self.model, self.q, self.dt_TSID * v_mean)
+        v_mean = self.v + 0.5 * self.dt * dv
+        self.v_command += self.dt * dv
+        self.q_command = pin.integrate(self.model, self.q, self.dt  * v_mean)
 
         # print(self.q_des - self.q)
 
-        self.t += self.dt_TSID
+        self.t += self.dt
 
         self.pub_act.publish(self.t, self.q, self.v, self.tau)

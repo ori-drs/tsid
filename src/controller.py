@@ -3,15 +3,15 @@
 import time
 
 import rospy
-import quadruped
+import quadrupedSynchronous
 import numpy as np
 import matplotlib.pyplot as plt
 
 rospy.init_node('controller', anonymous=True)
 
-dt = 0.001
+dt = 0.0025
 
-anymal = quadruped.Anymal(dt, 0.1)
+anymal = quadrupedSynchronous.Anymal(dt)
 
 
 #
@@ -47,9 +47,7 @@ while True:
         #     plt.plot(tArr, errArr[i])
         # plt.show()
         break
-    else:
-        time.sleep(dt)
-        anymal.updateRaiSim()
+        # anymal.updateRaiSim()
         # shouldAdd, t, err = anymal.getPlots()
         # if shouldAdd:
         #     tArr.append(t)

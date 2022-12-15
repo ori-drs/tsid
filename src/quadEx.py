@@ -76,9 +76,9 @@ v = np.zeros(robot.nv)
 
 viz.display(q)
 
-robot_display.displayCollisions(False)
-robot_display.displayVisuals(True)
-robot_display.display(q)
+# robot_display.displayCollisions(False)
+# robot_display.displayVisuals(True)
+# robot_display.display(q)
 
 assert [robot.model().existFrame(name) for name in contact_frames]
 
@@ -134,7 +134,7 @@ com_acc_ref = np.empty((3, N_SIMULATION)) * nan
 com_acc_des = np.empty((3, N_SIMULATION)) * nan  # acc_des = acc_ref - Kp*pos_err - Kd*vel_err
 
 offset = robot.com(data) + np.array([0.0, 0.0, 0.0])
-amp = np.array([0.0, 0.03, 0.0])
+amp = np.array([0.05, 0.05, 0.05])
 two_pi_f = 2 * np.pi * np.array([0.0, 2.0, 0.7])
 two_pi_f_amp = np.multiply(two_pi_f, amp)
 two_pi_f_squared_amp = np.multiply(two_pi_f, two_pi_f_amp)
@@ -185,7 +185,8 @@ for i in range(0, N_SIMULATION):
     q = pin.integrate(robot.model(), q, dt * v_mean)
     t += dt
 
-    if i % DISPLAY_N == 0: robot_display.display(q)
+    if i % DISPLAY_N == 0: viz.display(q)
+        # robot_display.display(q)
 
     time_spent = time.time() - time_start
     if (time_spent < dt): time.sleep(dt - time_spent)
