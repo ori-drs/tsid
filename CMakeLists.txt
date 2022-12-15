@@ -196,6 +196,7 @@ set(${PROJECT_NAME}_TASKS_SOURCES
     src/tasks/task-contact-force.cpp
     src/tasks/task-cop-equality.cpp
     src/tasks/task-joint-bounds.cpp
+    src/tasks/task-joint-posVelAcc-bounds.cpp
     src/tasks/task-joint-posture.cpp
     src/tasks/task-joint-posVelAcc-bounds.cpp
     src/tasks/task-capture-point-inequality.cpp

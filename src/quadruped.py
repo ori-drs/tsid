@@ -73,6 +73,8 @@ class Anymal():
         self.v_des = np.array(self.v)
         self.tau = np.zeros(12)
 
+        p_min = self.model.lowerPositionLimit[7:]
+        p_max = self.model.upperPositionLimit[7:]
         v_max = self.model.velocityLimit[6:]
         v_min = -v_max
         tau_max = self.model.effortLimit[6:]
@@ -81,10 +83,10 @@ class Anymal():
         print(tau_max)
         # p_max = self.model.upperPositionLimit
         # p_min = self.model.lowerPositionLimit
-        self.jointBoundsTask = tsid.TaskJointBounds("task-joint-bounds", self.robot, self.dt_TSID)
-        self.jbt = tsid.TaskJointPosVelAccBounds("task-joint-pos-vel-acc-bounds", self.robot, self.dt_TSID)
-        # self.jointBoundsTask.setPositionBounds(p_min, p_max)
-        self.jointBoundsTask.setVelocityBounds(v_min, v_max)
+        self.jointBoundsTask = tsid.TaskJointPosVelAccBounds("task-joint-bounds", self.robot, self.dt_TSID)
+        self.jointBoundsTask.setPositionBounds(p_min, p_max)
+        self.jointBoundsTask.setVelocityBounds(v_max)
+        # self.jointBoundsTask.setAccelerationBounds
 
         self.actuationBoundsTask = tsid.TaskActuationBounds("task-actuation-bounds", self.robot)
         self.actuationBoundsTask.setBounds(tau_min, tau_max)
