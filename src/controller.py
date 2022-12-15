@@ -3,7 +3,7 @@
 import time
 
 import rospy
-import quadrupedSynchronous
+import quadruped
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -11,7 +11,7 @@ rospy.init_node('controller', anonymous=True)
 
 dt = 0.0025
 
-anymal = quadrupedSynchronous.Anymal(dt)
+anymal = quadruped.Anymal(dt, 0.01)
 
 
 #

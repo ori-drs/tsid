@@ -56,14 +56,6 @@ class Anymal():
         self.postureTaskInit()
         # TO DO: Make task base class with an init and update function
 
-        # Used in subscriber callback later
-        self.interface = WholeBodyStateInterface(self.model)
-
-        # Setup subscriber
-        # self.wbcpActual = whole_body_state_publisher.WholeBodyStatePublisher('/whole_body_state_actual', self.model)
-        # self.wbcpController = whole_body_controller_publisher.WholeBodyControllerPublisher('/whole_body_state_controller', self.model)
-        rospy.Subscriber("/whole_body_state", WholeBodyState, self.callback)
-
         # Setup variables for output of TSID controller
         self.q_command, self.v_command = self.q, self.v
 
@@ -90,6 +82,10 @@ class Anymal():
         self.invdyn.addMotionTask(self.jointBoundsTask, w_joint_bounds, 0, 0.0)
         self.invdyn.addActuationTask(self.actuationBoundsTask, w_torque_bounds, 0, 0.0)
 
+        self.q_des = np.array([ 0., 0., 0.4792, 0., 0., 0., 1., -0.1, 0.7, -1., -0.1, -0.7, 1., -0.1, 0.7, -1., -0.1, -0.7, 1.])
+        self.v_des = np.zeros(18)
+
+
     def pinToRaiSim(self, qin, vin):
         qout = np.array(qin)
         qout[10:13] = qin[13:16]
@@ -101,9 +97,7 @@ class Anymal():
         vout[12:15] = vin[9:12]
         return qout, vout
 
-    def callback(self, msg):
-        t, self.q_des, self.v_des, self.tau_des, p, pd, f, s = self.interface.writeFromMessage(msg)
-
+    def step(self):
         comQ = self.q_des[0:3]
         comV = self.v_des[0:3]
         self.sampleCom.value(comQ)
