@@ -9,6 +9,7 @@ from whole_body_state_conversions import whole_body_controller_publisher
 from whole_body_state_conversions import whole_body_state_publisher
 from robotSimulation import RaiSim
 import os
+import matplotlib.pyplot as plt
 
 class Anymal():
     def __init__(self, dt):
@@ -16,7 +17,7 @@ class Anymal():
         # File paths
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../example-robot-data/robots")
         print(path)
-       # path = '/home/kian/catkin_ws/src/example-robot-data/robots'
+       # path = '/home/`k`ian/catkin_ws/src/example-robot-data/robots'
         urdf = path + '/anymal_c_simple_description/urdf/anymal.urdf'
         srdf = path + '/anymal_raisim/srdf/anymal.srdf'
 
@@ -33,7 +34,7 @@ class Anymal():
         self.q = np.array([ 0., 0., 0.4792, 0, 0., 0., 1., -0.1, 0.7, -1., -0.1, -0.7, 1., 0.1, 0.7, -1., 0.1, -0.7, 1.])
         self.v = np.zeros(self.robot.nv)
 
-        self.q[2] += 0.1
+        self.q[2] += 0.05
 
         # Initialise an instance of RaiSim
         self.sim = RaiSim(self.dt)
@@ -57,7 +58,7 @@ class Anymal():
         # TO DO: Make task base class with an init and update function
 
         # Setup variables for output of TSID controller
-        self.q_command, self.v_command = self.q, self.v
+        self.q_command, self.v_command = np.array(self.q), np.array(self.v)
 
         self.q_des = np.array(self.q)
         self.v_des = np.array(self.v)
@@ -69,9 +70,12 @@ class Anymal():
         tau_max = self.model.effortLimit[6:]
         tau_min = -tau_max
 
+        # print(p_min)
+        # print(p_max)
+
         self.jointBoundsTask = tsid.TaskJointPosVelAccBounds("task-joint-bounds", self.robot, self.dt)
         self.jointBoundsTask.setPositionBounds(p_min, p_max)
-        self.jointBoundsTask.setVelocityBounds(v_max)
+        self.jointBoundsTask.setVelocityBounds(v_max*1.1)
 
         self.actuationBoundsTask = tsid.TaskActuationBounds("task-actuation-bounds", self.robot)
         self.actuationBoundsTask.setBounds(tau_min, tau_max)
@@ -81,10 +85,16 @@ class Anymal():
 
         self.invdyn.addMotionTask(self.jointBoundsTask, w_joint_bounds, 0, 0.0)
         self.invdyn.addActuationTask(self.actuationBoundsTask, w_torque_bounds, 0, 0.0)
+        self.count = 0
 
-        self.q_des = np.array([ 0., 0., 0.4792, 0., 0., 0., 1., -0.1, 0.7, -1., -0.1, -0.7, 1., -0.1, 0.7, -1., -0.1, -0.7, 1.])
-        self.v_des = np.zeros(18)
-
+        self.q_saved = []
+        self.q_des_saved = []
+        self.v_saved = []
+        self.v_des_saved = []
+        self.tau_saved = [[], [], [], [], [], [], [], [], [], [], [], []]
+        self.tau_wanted = [0.55, -9.07, 14.62, 0.61, 8.95, -16.07, -0.54, -9.09, 14.64, -0.60, 8.96, -16.08]
+        self.tau_des_saved = [[], [], [], [], [], [], [], [], [], [], [], []]
+        self.t_saved = []
 
     def pinToRaiSim(self, qin, vin):
         qout = np.array(qin)
@@ -98,6 +108,8 @@ class Anymal():
         return qout, vout
 
     def step(self):
+        self.q_des = np.array([ 0., 0., 0.4792, 0., 0., 0., 1., -0.1, 0.7, -1., -0.1, -0.7, 1., -0.1, 0.7, -1., -0.1, -0.7, 1.])
+        self.v_des = np.zeros(18)
         comQ = self.q_des[0:3]
         comV = self.v_des[0:3]
         self.sampleCom.value(comQ)
@@ -109,8 +121,14 @@ class Anymal():
         self.samplePosture.value(self.q_des)
         self.samplePosture.derivative(self.v_des)
         self.postureTask.setReference(self.samplePosture)
-        self.updateTSID()
+        if self.count > 2000:
+            self.updateTSID()
+        else:
+            self.count += 1
         self.updateRaiSim()
+        # time.sleep(0.02)
+
+
 
     def getModel(self):
         return self.model
@@ -119,7 +137,7 @@ class Anymal():
         return self.robot.com(self.data)
 
     def comTaskInit(self):
-        w_com = 1 # CoM task weight
+        w_com = 10 # CoM task weight
         kp_com = 50  # proportional gain of center of mass task
         self.comTask = tsid.TaskComEquality("task-com", self.robot)
         self.comTask.setKp(kp_com * np.ones(3))  # Proportional gain defined before = 20
@@ -137,11 +155,11 @@ class Anymal():
         kp_posture = np.array(  # proportional gain of joint posture task
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
         )*50
-        w_posture = 1
+        w_posture = 10
 
         self.postureTask = tsid.TaskJointPosture("task-posture", self.robot)
         self.postureTask.setKp(kp_posture)  # Proportional gain defined before (different for each joints)
-        self.postureTask.setKd(3 * kp_posture)  # Derivative gain = 2 * kp
+        self.postureTask.setKd(2 * kp_posture)  # Derivative gain = 2 * kp
         # Add the task with weight = w_posture, priority level = 1 (in cost function) and a transition duration = 0.0
         self.invdyn.addMotionTask(self.postureTask, w_posture, 1, 0)
 
@@ -236,12 +254,24 @@ class Anymal():
 
     def updateRaiSim(self):
         self.q, self.v = self.sim.getQ(), self.sim.getV()
-        kp = 80
-        kd = 1.5
-        self.qd, self.vd = self.q_command, self.v_command
-        tau = self.tau + kp*(self.qd - self.q)[7:] + kd*(self.vd - self.v)[6:]
+        kp = 100
+        kd = 2
+        # tau = self.tau + kp * (self.q_command - self.q)[7:] + kd * (self.v_command - self.v)[6:]
+        if (self.count < 2000):
+            self.t += self.dt
+            tau = kp * (self.q_command - self.q)[7:] + kd * (self.v_command - self.v)[6:]
+        else:
+            tau = self.tau
         tau = np.concatenate((np.zeros(6), tau))
         self.sim.updateTau(tau)
+        self.q_saved.append(self.q)
+        self.q_des_saved.append(self.q_command)
+        self.v_saved.append(self.v)
+        self.v_des_saved.append(self.v_command)
+        self.t_saved.append(self.t)
+        for i in range(0, len(self.tau)):
+            self.tau_saved[i].append(self.tau[i])
+            self.tau_des_saved[i].append(self.tau_wanted[i])
         self.sim.integrate()
 
     def getPlots(self):
@@ -250,6 +280,17 @@ class Anymal():
             return True, self.t, np.abs((self.qd-self.q)[7:])
         else:
             return False, None, None
+
+    def plot(self):
+        print(self.t_saved[len(self.t_saved ) - 1])
+        for i in range(0, 12):
+            plt.subplot(3, 4, i+1)
+            plt.plot(self.t_saved[1900:], self.tau_saved[i][1900:])
+            plt.plot(self.t_saved[1900:], self.tau_des_saved[i][1900:])
+            plt.ylabel("Torque of joint " + str(i+1))
+            plt.xlabel("Time (secs)")
+        plt.show()
+
 
     def updateTSID(self):
     #     self.samplePosture
@@ -265,6 +306,12 @@ class Anymal():
 
         R = self.sim.getAngularVelTransform()
         self.v[3:6] = np.matmul(R, self.v[3:6])
+
+        # # print(self.v[3:6])
+        # self.v[3:6] = self.sim.getBaseAngVel()
+        # print(self.v[3:6])
+        # print("--")
+
         forces = self.sim.getForces()
 
         contacts = []
@@ -288,7 +335,6 @@ class Anymal():
                 self.invdyn.removeRigidContact(self.allContacts[i].name, 0)
                 self.activeContacts.remove(i)
 
-
         self.HQPData = self.invdyn.computeProblemData(self.t, self.q, self.v)
         # self.HQPData.print_all()
 
@@ -298,11 +344,12 @@ class Anymal():
             return 0
         self.tau = self.invdyn.getActuatorForces(sol)
 
+
         dv = self.invdyn.getAccelerations(sol)
 
         v_mean = self.v + 0.5 * self.dt * dv
-        self.v_command += self.dt * dv
-        self.q_command = pin.integrate(self.model, self.q, self.dt  * v_mean)
+        self.v_command = self.v + self.dt * dv
+        self.q_command = pin.integrate(self.model, self.q, self.dt * v_mean)
 
         # print(self.q_des - self.q)
 

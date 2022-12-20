@@ -99,6 +99,8 @@ class RaiSim(RobotSimulator):
         print(w_R_B_quat)
         return np.matmul(av, w_R_B_quat)
 
+    def getBaseAngVel(self):
+        return self.robot.getFrameAngularVelocity(0)
 
     def getQ(self):
         return self.robot.getGeneralizedCoordinate()

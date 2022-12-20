@@ -17,6 +17,7 @@ v = np.zeros(18)
 
 while True:
     if rospy.is_shutdown():
+        anymal.plot()
         print('shutdown')
         break
     else:
