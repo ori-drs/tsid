@@ -31,7 +31,7 @@ class Anymal():
         self.pub_act = whole_body_state_publisher.WholeBodyStatePublisher('/whole_body_state_actual', self.model)
         self.pub_des = whole_body_state_publisher.WholeBodyStatePublisher('/whole_body_state_desired', self.model)
 
-        self.q = np.array([ 0., 0., 0.4792, 0, 0., 0., 1., -0.1, 0.7, -1., -0.1, -0.7, 1., 0.1, 0.7, -1., 0.1, -0.7, 1.])
+        self.q = np.array([ 0., 0., 0.4792, 1, 0., 0., 0., -0.1, 0.7, -1., -0.1, -0.7, 1., 0.1, 0.7, -1., 0.1, -0.7, 1.])
         self.v = np.zeros(self.robot.nv)
 
         self.q[2] += 0.05
@@ -108,7 +108,7 @@ class Anymal():
         return qout, vout
 
     def step(self):
-        self.q_des = np.array([ 0., 0., 0.4792, 0., 0., 0., 1., -0.1, 0.7, -1., -0.1, -0.7, 1., -0.1, 0.7, -1., -0.1, -0.7, 1.])
+        self.q_des = np.array([ 0., 0., 0.4792, 1., 0., 0., 0., -0.1, 0.7, -1., -0.1, -0.7, 1., -0.1, 0.7, -1., -0.1, -0.7, 1.])
         self.v_des = np.zeros(18)
         comQ = self.q_des[0:3]
         comV = self.v_des[0:3]
@@ -137,7 +137,7 @@ class Anymal():
         return self.robot.com(self.data)
 
     def comTaskInit(self):
-        w_com = 10 # CoM task weight
+        w_com = 1 # CoM task weight
         kp_com = 50  # proportional gain of center of mass task
         self.comTask = tsid.TaskComEquality("task-com", self.robot)
         self.comTask.setKp(kp_com * np.ones(3))  # Proportional gain defined before = 20
@@ -155,7 +155,7 @@ class Anymal():
         kp_posture = np.array(  # proportional gain of joint posture task
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
         )*50
-        w_posture = 10
+        w_posture = 1
 
         self.postureTask = tsid.TaskJointPosture("task-posture", self.robot)
         self.postureTask.setKp(kp_posture)  # Proportional gain defined before (different for each joints)
@@ -184,10 +184,15 @@ class Anymal():
         # rf_frame_name = "RF_KFE"
         # lh_frame_name = "LH_KFE"
 
-        kp_contact = 2 # proportional gain of contact constraint
-        w_forceRef = 1e-3 # weight of force regularization task 1e-3
+        kp_contact = 1 # proportional gain of contact constraint
+        w_forceRef = 1 # weight of force regularization task 1e-3
 
-        contactNormal = np.array([0., 0., 1.])  # direction of the normal to the contact surface
+        contactNormal = np.array([0, 0, 1.])  # direction of the normal to the contact surface
+        # contactNormalLF = np.array([0.21, -0.21, 0.85])  # direction of the normal to the contact surface
+        # contactNormalLH = np.array([-0.2, -0.22, 0.95])  # direction of the normal to the contact surface
+        # contactNormalRF = np.array([0.21, 0.21, 0.95])  # direction of the normal to the contact surface
+        # contactNormalRH = np.array([-0.2, 0.22, 0.95])  # direction of the normal to the contact surface
+
 
 
         self.contactLF = tsid.ContactPoint("contact_lfoot", self.robot, lf_frame_name, contactNormal, mu, fMin, fMax)
@@ -260,10 +265,15 @@ class Anymal():
         if (self.count < 2000):
             self.t += self.dt
             tau = kp * (self.q_command - self.q)[7:] + kd * (self.v_command - self.v)[6:]
+            tau = np.concatenate((np.zeros(6), tau))
+            self.sim.updateTau(tau)
         else:
             tau = self.tau
+            print(tau)
+            tau = np.concatenate((np.zeros(6), tau))
+            self.sim.updateTau(tau)
         tau = np.concatenate((np.zeros(6), tau))
-        self.sim.updateTau(tau)
+        # self.sim.updateTau(tau)
         self.q_saved.append(self.q)
         self.q_des_saved.append(self.q_command)
         self.v_saved.append(self.v)
@@ -285,8 +295,8 @@ class Anymal():
         print(self.t_saved[len(self.t_saved ) - 1])
         for i in range(0, 12):
             plt.subplot(3, 4, i+1)
-            plt.plot(self.t_saved[1900:], self.tau_saved[i][1900:])
-            plt.plot(self.t_saved[1900:], self.tau_des_saved[i][1900:])
+            plt.plot(self.t_saved[1999:], self.tau_saved[i][1999:])
+            plt.plot(self.t_saved[1999:], self.tau_des_saved[i][1999:])
             plt.ylabel("Torque of joint " + str(i+1))
             plt.xlabel("Time (secs)")
         plt.show()
@@ -318,13 +328,13 @@ class Anymal():
         for i in range(0, len(forces)):
             contacts.append(forces[i][0])
         # print(contacts)
-        w_forceRef = 1
+        w_forceRef = 0.5
         for i in [3, 6, 9, 12]:
             if i in contacts:
                 # print(i)
                 if not(i in self.activeContacts):
                     self.activeContacts.append(i)
-                    self.invdyn.addRigidContact(self.allContacts[i], w_forceRef, 2, 1)
+                    self.invdyn.addRigidContact(self.allContacts[i], w_forceRef, 1, 0)
                 else:
                     for k in range(0, len(forces)):
                         if forces[k][0] == i:

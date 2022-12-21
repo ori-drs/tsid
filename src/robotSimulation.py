@@ -72,13 +72,16 @@ class RaiSim(RobotSimulator):
             if contact.isObjectA():
                 continue
             if(contact.getlocalBodyIndex()):
-                R = self.robot.getFrameOrientation(contact.getlocalBodyIndex())
+                # R = self.robot.getFrameOrientation(contact.getlocalBodyIndex())
                 # print(R)
                 force = (contact.getImpulse() / self.dt)
                 # force = np.matmul(force, R)
                 # print(contact.getlocalBodyIndex())
-                # print(force)
-                force[1] *= -1
+                print(contact.getlocalBodyIndex())
+                # if contact.getlocalBodyIndex() == 3:
+                #     force[2] *= -1
+                # force[0] *= -1
+                print(force)
                 if (force[2] != 0):
                 # if True:
                     # print(force)
