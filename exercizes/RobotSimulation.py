@@ -12,9 +12,9 @@ class RobotSimulator(metaclass=ABCMeta):
     def addRobot(self):
         print("Robot Added")
 
-    @abstractmethod
-    def kill(self):
-        print("Server Killed")
+    # @abstractmethod
+    # def kill(self):
+    #     print("Server Killed")
 
 
 
@@ -28,6 +28,10 @@ class RaiSim(RobotSimulator):
         self.server = raisim.RaisimServer(self.world)
         self.server.launchServer(8080)
 
+    def __del__(self):
+        print("Shutting down RaiSim server")
+        self.server.killServer()
+
     def updateConfiguration(self, q):
         if self.robot:
             self.robot.setGeneralizedCoordinate(q)
@@ -35,9 +39,6 @@ class RaiSim(RobotSimulator):
 
     def addRobot(self, urdf):
         self.robot = self.world.addArticulatedSystem(urdf)
-
-    def kill(self):
-        self.server.killServer()
 
     def printImpulse(self):
         contacts = self.robot.getContacts()
